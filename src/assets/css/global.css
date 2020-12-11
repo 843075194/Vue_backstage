@@ -3,6 +3,7 @@ html,body,#app {
     height: 100%;
     margin:0;
     padding:0;
+    min-width: 1240px;
 }
 .el-breadcrumb {
     margin-bottom: 15px;
@@ -17,4 +18,9 @@ html,body,#app {
 }
 .el-pagination {
     margin-top: 15px;
+}
+/* 谁需要垂直方向对齐，就加这个类 */
+.vcenter {
+    display: flex;
+    align-items: center;
 }

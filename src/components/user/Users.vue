@@ -51,22 +51,18 @@
               </el-tooltip>
               <!-- 分配角色按钮 -->
               <el-tooltip effect="dark" content="分配角色" placement="top" :enterable='false'>
-                <el-button type="warning" icon="el-icon-setting" size="mini"></el-button>
+                <el-button type="warning" icon="el-icon-setting" size="mini" @click="setRole(scope.row)"></el-button>
               </el-tooltip>
             </template>
           </el-table-column>
         </el-table>
 
         <!-- 分页区域 -->
-        <el-pagination
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-          :current-page="queryInfo.pagenum"
-          :page-size="queryInfo.pagesize"
-          :page-sizes="[1, 3, 5, 8]"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="total">
+        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+          :current-page="queryInfo.pagenum" :page-size="queryInfo.pagesize" :page-sizes="[1, 3, 5, 8]"
+          layout="total, sizes, prev, pager, next, jumper" :total="total">
         </el-pagination>
+
     </el-card>
 
     <!-- 添加用户的对话框 -->
@@ -92,6 +88,7 @@
         <el-button type="primary" @click="addUser">确 定</el-button>
       </span>
     </el-dialog>
+    <!----------------------------------------------------------------------------------->
 
     <!-- 修改用户的对话框 -->
     <el-dialog title="修改用户" :visible.sync="editDiaVisible" width="50%" @close="editDialogClosed">
@@ -105,13 +102,38 @@
         <el-form-item label="手机" prop="mobile">
           <el-input v-model="editForm.mobile"></el-input>
         </el-form-item>
-
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="editDiaVisible = false">取 消</el-button>
         <el-button type="primary" @click="editUserInfo">确 定</el-button>
       </span>
     </el-dialog>
+    <!----------------------------------------------------------------------------------->
+
+    <!-- 分配角色的对话框 -->
+    <el-dialog title="分配角色"
+     :visible.sync="setRoleDialogVisible"
+      width="50%" @close="setRoleDialogClosed">
+      <div>
+        <p>当前的用户：{{userInfo.username}}</p>
+        <p>当前的角色：{{userInfo.role_name}}</p>
+        <p>分配新角色：
+          <el-select v-model="selectedRoleId" placeholder="请选择">
+            <el-option
+              v-for="item in rolesList"
+              :key="item.id"
+              :label="item.roleName"
+              :value="item.id">
+            </el-option>
+          </el-select>
+        </p>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="setRoleDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="saveRoleInfo">确 定</el-button>
+      </span>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -203,7 +225,15 @@ export default {
           { required: true, message: '请输入手机号码', trigger: 'blur' },
           { validator: checkMobile, trigger: 'blur' }
         ]
-      }
+      },
+      // 控制分配角色对话框的显示和隐藏
+      setRoleDialogVisible: false,
+      // 需要被分配角色的用户信息
+      userInfo: {},
+      // 所有角色的数据列表
+      rolesList: [],
+      // 已选中的角色Id值
+      selectedRoleId: ''
     }
   },
   created () {
@@ -217,23 +247,23 @@ export default {
       if (res.meta.status !== 200) return this.$message.error('获取用户列表失败')
       this.userlist = res.data.users
       this.total = res.data.total
-      console.log(res)
+      // console.log(res)
     },
     // 监听 page-size(pagination组件的一个属性) 改变的事件 每页显示条目个数
     handleSizeChange (newSize) {
-      console.log(newSize) // 当修改每页要显示多少条的时候，也就可以通过newSize拿到我们选的是一页显示多少条
+      // console.log(newSize) // 当修改每页要显示多少条的时候，也就可以通过newSize拿到我们选的是一页显示多少条
       this.queryInfo.pagesize = newSize // 这个时候我们改变了每页显示多少条数据
       this.getUserList() // 因为初始化的时候参数我们都是随便传的，这个时候我们就根据用户选择的每页显示多少条重新发起请求获取数据
     },
     // 监听 页码值 改变的事件
     handleCurrentChange (newPage) {
-      console.log(newPage)
+      // console.log(newPage)
       this.queryInfo.pagenum = newPage // 当我们点击页码的时候，希望获取到不同页码的时候
       this.getUserList() // 所以根据newPage获取到的页码，我们也重新发起请求获取数据
     },
     // 监听 switch 开关的状态改变
     async userStateChanged (userinfo) {
-      console.log(userinfo) // 可以拿到修改后的值
+      // console.log(userinfo) // 可以拿到整行修改后的数据
       // users/:uId/state/:type调用这个接口
       const { data: res } = await this.$http.put(`users/${userinfo.id}/state/${userinfo.mg_state}`)
       if (res.meta.status !== 200) {
@@ -254,10 +284,14 @@ export default {
     addUser () {
       // 在添加新用户之前，我们先进行一个表单预验证
       this.$refs.addFormRef.validate(async valid => {
-        console.log(valid) // 拿到的是一个布尔值
+        // console.log(valid) // 拿到的是一个布尔值
+
         if (!valid) return console.log('失败')
+
         // 判断完之后可以发起添加用户的请求
-        const { data: res } = await this.$http.post('users', this.addForm)
+        // 因为是双向绑定，所以用户输入之后就有值了
+        const { data: res } = await this.$http.post('users', this.addForm) // 这个地方可以拿到addForm是因为表单绑定的就是这个数据
+
         if (res.meta.status !== 201) {
           this.$message.error('添加用户失败!')
         }
@@ -268,16 +302,30 @@ export default {
         this.getUserList()
       })
     },
-    // 修改用户信息，我们也先进行一个表单验证
+    // 在点击修改按钮时弹出一个表单内容
+    async showEditDialog (id) {
+      // console.log(id)
+      const { data: res } = await this.$http.get('users/' + id)
+      if (res.meta.status !== 200) {
+        this.$message.error('查询用户信息失败')
+      }
+      // console.log(res)
+      // this.$message.success('查询用户信息成功')
+      // 将返回的数据赋值给刚才定义的对象editForm
+      this.editForm = res.data
+      // editDiaVisible 这个是为了弹出对话框
+      this.editDiaVisible = true
+    },
+    // 点击确定-修改用户信息，先进行一个表单验证
     editUserInfo () {
       this.$refs.editFormRef.validate(async vaild => {
-        console.log(vaild) // 返回的是一个布尔类型的值
+        // console.log(vaild) // 返回的是一个布尔类型的值
         if (!vaild) {
           return console.log('失败')
         }
         // 因为修改用户的对话框绑定的是editForm，所以这里我们可以直接用editForm.id，拿到的就是当前这一行的id
-        console.log(this.editForm.id)
-        const { data: res } = await this.$http.put('users/' + this.editForm.id,
+        // console.log(this.editForm.id)
+        const { data: res } = await this.$http.put('users/' + this.editForm.id, // 对应283行拿到的editForm对象
           {
             email: this.editForm.email,
             mobile: this.editForm.mobile
@@ -293,24 +341,10 @@ export default {
         this.$message.success('修改用户成功')
       })
     },
-    // 在点击修改按钮时弹出一个表单内容
-    async showEditDialog (id) {
-      // console.log(id)
-      const { data: res } = await this.$http.get('users/' + id)
-      if (res.meta.status !== 200) {
-        this.$message.error('查询用户信息失败')
-      }
-      // console.log(res)
-      this.$message.success('查询用户信息成功')
-      // 将返回的数据赋值给刚才定义的对象editForm
-      this.editForm = res.data
-      // editDiaVisible 这个是为了弹出对话框
-      this.editDiaVisible = true
-    },
     // 根据Id删除对应的用户信息
     async removeUserById (id) {
       // 弹框询问用户是否真的要删除此条数据
-      const confirmResult = await this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
+      const confirmResult = await this.$confirm('我真的要删啦！！！', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -327,6 +361,47 @@ export default {
       }
       this.$message.success('删除用户成功')
       this.getUserList()
+    },
+    // 展示分配角色的对话框
+    async setRole (userInfo) {
+      this.userInfo = userInfo // userInfo是当前一行的全部数据
+      // console.log(this.userInfo)
+
+      // 在展示对话框之前，获取所有角色的列表 ,在弹出框中要显示的
+      const { data: res } = await this.$http.get('roles')
+      if (res.meta.status !== 200) {
+        return this.$message.error('获取角色列表失败！')
+      }
+      // 调用完了需要定义一个数组接收一下返回的数据
+      this.rolesList = res.data
+      console.log(this.rolesList) // 拿到的整行全部数据
+      this.setRoleDialogVisible = true
+    },
+    // 点击按钮，分配角色
+    async saveRoleInfo () {
+      if (!this.selectedRoleId) {
+        return this.$message.error('请选择要分配的角色')
+      }
+      // 调用1.3.7分配用户角色
+      const { data: res } = await this.$http.put(
+        `users/${this.userInfo.id}/role`,
+        {
+          rid: this.selectedRoleId
+        }
+      )
+      if (res.meta.status !== 200) {
+        return this.$message.error('更新角色失败')
+      }
+      this.$message.success('更新角色成功!')
+      // 重新更新数据
+      this.getUserList()
+      // 隐藏弹出框
+      this.setRoleDialogVisible = false
+    },
+    // 监听分配角色对话框的关闭事件
+    setRoleDialogClosed () {
+      this.selectedRoleId = ''
+      this.userInfo = {}
     }
   }
 }
