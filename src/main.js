@@ -6,6 +6,7 @@ import './plugins/element.js'
 import './assets/fonts/iconfont.css'
 // 导入全局样式表
 import './assets/css/global.css'
+import TreeTable from 'vue-table-with-tree-grid'
 
 import axios from 'axios'
 // 配置请求的根路径,也就是说所有的路由都是以这个为一级路由开始的
@@ -23,6 +24,8 @@ Vue.prototype.$http = axios
 // 这样配置完之后每一个地方都可以用this.$http去访问axios然后发起请求
 
 Vue.config.productionTip = false
+
+Vue.component('tree-table', TreeTable)
 
 new Vue({
   router,
